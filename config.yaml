@@ -1,0 +1,34 @@
+# Analysis name
+
+filename: example
+
+# Input files
+
+samples:
+  - sample1
+  - sample2
+  - ...
+
+control:
+  - control1
+  - ...
+
+adapters: adapters/sequences.fa
+
+# Reference path
+
+reference: reference/masked_reference.fa
+chromsize: reference/chromosome_sizes.txt
+
+# mrsFast options
+
+indexwindow: integer
+cropsize: integer
+
+# Peak calling options
+
+broad: boolean
+
+# Workflow options
+
+csem: boolean
