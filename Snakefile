@@ -234,7 +234,7 @@ rule bdgcmp:
     """
     macs2 bdgcmp -t {input.sample} -c {input.control} --outdir {params} --o-prefix {wildcards.exp} -m logLR -p 0.00001
     """
-    
+
 # Converts peaks from BED file to a bigwig file
 rule bigwig:
    input:
