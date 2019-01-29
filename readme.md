@@ -92,7 +92,7 @@ export PATH="/share/dennislab/programs/share_path:/share/dennislab/programs/csem
 
 Dry-run:
 ```
-snakemake --configfile config.yaml -n
+snakemake --configfile config.yaml --use-conda -n
 ```
 
 Obtain workflow graphs:
