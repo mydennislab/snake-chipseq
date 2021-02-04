@@ -1,0 +1,261 @@
+"""
+Snakemake pipeline for long ChIP-Seq data
+Authors: Daniela C. Soto <dcsoto@ucdavis.edu> & Mira Mastoras <mnmastoras@ucdavis.edu>
+"""
+CSEM_PATH="/share/dennislab/programs/csem-2.4"
+
+# -----------
+# CONFIG FILE
+# -----------
+
+ADAPTERS = config["adapters"]
+REFERENCE = config["reference"]
+CHROMSIZE = config["chromsize"]
+SAMPLES = config["samples"]
+CONTROL = config["control"]
+FILENAME = config["filename"]
+
+SAMPLES_SIZE = config["samples_size"]
+CONTROL_SIZE = config["control_size"]
+
+fragsizes = dict(zip(SAMPLES+CONTROL,
+                     SAMPLES_SIZE+CONTROL_SIZE))
+
+MAPPERS = ["bowtie2"]
+
+if config["broad"]:
+  PEAK_TYPE = "--broad"
+  QVALUE = 0.05
+else:
+  PEAK_TYPE = ""
+  QVALUE = 0.01
+
+# ---------------
+# WORKFLOW SET-UP
+# ---------------
+
+TARGETS = [expand("results/peak_calling/"+FILENAME+"_{mapper}_logLR.bw", mapper = MAPPERS),
+           expand("results/peak_calling/"+FILENAME+"_csem_{mapper}_logLR.bw", mapper = MAPPERS)]
+
+# -------
+# TARGETS
+# -------
+
+rule all:
+  input:
+    TARGETS
+
+# --------
+# TRIMMING
+# --------
+
+rule trimming:
+  input:
+    r1 = "reads/{smp}_R1_001.fastq.gz",
+    r2 = "reads/{smp}_R2_001.fastq.gz"
+  output:
+    r1 = "results/data_trimmed/{smp}_R1_001.trimmed.fastq.gz",
+    r2 = "results/data_trimmed/{smp}_R2_001.trimmed.fastq.gz"
+  params:
+    r1 = "results/data_trimmed/{smp}_R1_001.unpaired.fastq.gz",
+    r2 = "results/data_trimmed/{smp}_R2_001.unpaired.fastq.gz"
+  threads: 5
+  shell:
+    """
+    trimmomatic PE -threads {threads} -phred33 {input.r1} {input.r2} {output.r1} {params.r1} {output.r2} {params.r2} ILLUMINACLIP:{ADAPTERS}:2:30:10 SLIDINGWINDOW:4:30 MINLEN:50
+    """
+# --------
+# INDEXING
+# --------
+
+rule bwt2_index:
+  input:
+    reference = REFERENCE
+  output:
+    REFERENCE+".1.bt2",
+    REFERENCE+".2.bt2",
+    REFERENCE+".3.bt2",
+    REFERENCE+".4.bt2",
+    REFERENCE+".rev.1.bt2",
+    REFERENCE+".rev.2.bt2"
+  shell:
+    """
+    bowtie2-build {input.reference} {input.reference}
+    """
+
+# --------
+# MAPPINGS
+# --------
+
+rule bowtie2_PE:
+  input:
+    r1 = "results/data_trimmed/{smp}_R1_001.trimmed.fastq.gz",
+    r2 = "results/data_trimmed/{smp}_R2_001.trimmed.fastq.gz",
+  output:
+    temp("results/alignments/{smp}.trimmed.bowtie2_PE.sam")
+  params:
+    reference = REFERENCE
+  threads: 5
+  shell:
+    """
+    bowtie2 -p {threads} -k 99 -x {params} -1 {input.r1} -2 {input.r2} -S {output}
+    """
+
+rule sam2bam:
+  input:
+    "results/alignments/{smp}.trimmed.bowtie2_PE.sam"
+  output:
+    "results/alignments/{smp}.trimmed.bowtie2_PE.bam"
+  shell:
+    """
+    cut -f1-11 {input} | samtools view -Sb | samtools sort - > {output}
+    """
+
+# ---------------
+# POST-PROCESSING
+# ---------------
+
+rule primary:
+  '''removes unmapped, keeps properly paired'''
+  input:
+    "results/alignments/{smp}.trimmed.bowtie2_PE.bam"
+  output:
+    "results/alignments/{smp}.trimmed.bowtie2_PE.filt.bam"
+  shell:
+    """
+    samtools view -Sb -F12 -f3 {input} -o {output}
+    """
+
+rule deduplicate:
+  '''Removes PCR duplicates.'''
+  input:
+    "results/alignments/{smp}.trimmed.bowtie2_PE.filt.bam"
+  output:
+    psort = "results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.bam",
+    dedup = "results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.bam"
+  params:
+    "results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.metrics"
+  threads: 20
+  shell:
+    """
+    picard SortSam I={input} O={output.psort} SORT_ORDER=queryname
+    picard MarkDuplicates REMOVE_DUPLICATES=true ASSUME_SORTED=false I={output.psort} O={output.dedup} M={params}
+    """
+
+
+rule rsem:
+  input:
+    "results/alignments/{smp}.trimmed.{mapping}.filt.psort.dedup.bam"
+  output:
+    "results/alignments/{smp}.trimmed.{mapping}.filt.psort.dedup.conv.bam"
+  params:
+    "results/alignments/{smp}.trimmed.{mapping}.filt.psort.dedup.conv"
+  shell:
+    """
+    /share/dennislab/programs/RSEM/convert-sam-for-rsem {input} {params}
+    """
+    
+#-------------
+# PEAK-CALLING
+#-------------
+
+rule macs:
+  input:
+    samples = expand("results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.bam", smp = SAMPLES),
+    control = expand("results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.bam", smp = CONTROL)
+  output:
+    "results/peak_calling/"+FILENAME+"_bowtie2_control_lambda.bdg",
+    "results/peak_calling/"+FILENAME+"_bowtie2_treat_pileup.bdg"
+  params:
+    samples = " ".join(expand("results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.bam", smp = SAMPLES)),
+    control = " ".join(expand("results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.bam", smp = CONTROL)),
+    outname = FILENAME+"_bowtie2",
+    outdir = "results/peak_calling"
+  shell:
+    """
+    macs2 callpeak -t {params.samples} -c {params.control} -f BAMPE -g hs --outdir {params.outdir} -n {params.outname} -B -q {QVALUE} {PEAK_TYPE}
+    """
+
+#------------------
+# CSEM PEAK-CALLING
+#------------------
+
+def get_fragsize(wildcards):
+  return fragsizes.get(wildcards.smp)
+
+rule csem:
+  input:
+    "results/alignments/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.bam"
+  output:
+    "results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.bam"
+  params:
+    filename="results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem",
+    fragsize=get_fragsize
+  threads: 5
+  shell:
+    """
+    {CSEM_PATH}/run-csem --bam -p {threads} --no-extending-reads {input} {params.fragsize} {params.filename}
+    """
+
+rule sampling:
+  input:
+    "results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.bam"
+  output:
+    "results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling.bam",
+    temp("results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling.tmp"),
+    temp("results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling.header")
+  params:
+    "results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling"
+  shell:
+    """
+    bash scripts/long_sampling.sh {input} {params}
+    """
+
+rule macs_csem:
+  input:
+    samples = expand("results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling.bam", smp = SAMPLES),
+    control = expand("results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling.bam", smp = CONTROL)
+  output:
+    "results/peak_calling/"+FILENAME+"_csem_bowtie2_control_lambda.bdg",
+    "results/peak_calling/"+FILENAME+"_csem_bowtie2_treat_pileup.bdg"
+  params:
+    samples = " ".join(expand("results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling.bam", smp = SAMPLES)),
+    control = " ".join(expand("results/allocations/{smp}.trimmed.bowtie2_PE.filt.psort.dedup.conv.csem.sampling.bam", smp = CONTROL)),
+    outname = FILENAME+"_csem_bowtie2",
+    outdir = "results/peak_calling"
+  shell:
+    """
+    macs2 callpeak -t {params.samples} -c {params.control} -f BAMPE -g hs --outdir {params.outdir} -n {params.outname} -B -q {QVALUE} {PEAK_TYPE}
+    """
+
+# -------------
+# VISUALIZATION
+# -------------
+
+rule bdgcmp:
+  input:
+    sample = "results/peak_calling/{exp}_bowtie2_treat_pileup.bdg",
+    control = "results/peak_calling/{exp}_bowtie2_control_lambda.bdg"
+  output:
+    "results/peak_calling/{exp}_bowtie2_logLR.bdg"
+  params:
+    "results/peak_calling/"
+  shell:
+    """
+    macs2 bdgcmp -t {input.sample} -c {input.control} --outdir {params} --o-prefix {wildcards.exp}_bowtie2 -m logLR -p 0.00001
+    """
+
+rule bigwig:
+   input:
+     "results/peak_calling/{exp}_bowtie2_logLR.bdg"
+   output:
+     "results/peak_calling/{exp}_bowtie2_logLR.bw"
+   params:
+     temp("results/peak_calling/{exp}_bowtie2_logLR.sorted.bdg")
+   shell:
+     """
+     LC_COLLATE=C sort -k1,1 -k2,2n {input} > {params}
+     bedGraphToBigWig {params} {CHROMSIZE} {output}
+     """
+
+
