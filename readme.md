@@ -6,12 +6,14 @@ Besides `snakemake`, this pipeline uses the following tools:
 - fastqc
 - trimmomatic
 - samtools
-- mrsfast
+- bowtie (short read) bowtie2 (long read) 
 - macs2
 - csem
+- rsem (long chip pipeline only) 
 - bedGraphToBigWig
+- phantompeakqualtools
 
-Most tools are automatically installed by `snakemake` through Conda. MrsFast, CSEM and BedGraphToBigWig must be installed locally (they are not yet available in Conda repositories). 
+Most tools are automatically installed by `snakemake` through Conda. CSEM and BedGraphToBigWig must be installed locally (they are not yet available in Conda repositories). 
 
 ## 2) Folder structure
 
@@ -21,7 +23,7 @@ The following structure is recommended:
 |__ adapters
     |__ sequences.fa 
 |__ config.yaml # Mandatory: described in section 3
-|__ data 
+|__ reads 
     |__ sample1.fastq 
     |__ sample2.fastq
     |__ control1.fastq
@@ -36,7 +38,7 @@ The following structure is recommended:
     |__ masked_reference.fa
     |__ chromosome_size.txt
 |__ scripts
-    |__ sampling.sh
+    |__ sampling.sh or long_sampling.sh
 |__ Snakefile
 ```
 
@@ -61,6 +63,14 @@ samples:
 control:
   - control1
   - ...
+  
+samples_size: # from phantompeakqualtools
+  - 485
+  - 485
+
+control_size: # from phantompeakqualtools
+  - 665
+  - 655
 
 adapters: adapters/sequences.fa
 
@@ -69,11 +79,6 @@ adapters: adapters/sequences.fa
 reference: reference/masked_reference.fa
 chromsize: reference/chromosome_sizes.txt
 
-# mrsFast options
-
-indexwindow: integer
-cropsize: integer
-
 # Peak calling options
 
 broad: boolean
@@ -81,6 +86,15 @@ broad: boolean
 # Workflow options
 
 csem: boolean
+```
+
+In order to obtain the values for samples_size and control_size in the config file, we need to predict fragment size for each dataset using the alignments obtained with bwt-default and PhantomPeakQualTools. To do this, we need to run the Snakefile until sam2bam rule and then run phantompeaktools. After obtaining the sizes from phantompeaktools, update the samples_size and control_size values in the config file and then run the snakemake as below. 
+
+For example:
+
+```
+snakemake -s Snakefile --configfile GM12878_H3K27ac.yaml -p -j 10 --until sam2bam
+Rscript /share/dennislab/programs/phantompeakqualtools/run_spp.R -c=results/alignments/ENCFF001CUR.trimmed.bwt-df.bam
 ```
 
 ## 4) Execution
