@@ -88,7 +88,7 @@ broad: boolean
 csem: boolean
 ```
 
-In order to obtain the values for samples_size and control_size in the config file, we need to predict fragment size for each dataset using the alignments obtained with bwt-default and PhantomPeakQualTools. To do this, we need to run the Snakefile until sam2bam rule and then run phantompeaktools. After obtaining the sizes from phantompeaktools, update the samples_size and control_size values in the config file and then run the snakemake as below. 
+In order to obtain the values for samples_size and control_size in the config file, we need to predict fragment size for each dataset using the alignments obtained with bwt-default and PhantomPeakQualTools. To do this, we need to run the Snakefile until sam2bam rule and then run phantompeaktools. After obtaining the sizes from phantompeaktools, update the samples_size and control_size values in the config file and then run the full snakemake pipeline as described in Section 4. 
 
 For example:
 
