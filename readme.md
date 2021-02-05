@@ -4,6 +4,10 @@ This repo contains Snakemake pipelines to align ChIP-seq data with multiple mapp
 
 [Diverse molecular mechanisms contribute to differential expression of human duplicated genes](https://www.biorxiv.org/content/10.1101/2020.11.27.401752v1). Shew CJ*, Carmona-Mora P, Soto DC, Mastoras M, Roberts E, Rosas J, Jagannathan D, Kaya G, O'Geen H, and Dennis MY. bioRxiv. 2020.
 
+**Snakefile_shortread**: used for analysis of short ENCODE reads (single-end)
+
+**Snakefile_long**: used for analysis of large-insert ChIP libraries (paired-end)
+
 ## 1) Required software
 
 Besides `snakemake`, this pipeline uses the following tools:
