@@ -1,5 +1,9 @@
 # Snakemake file to call peaks in ChIP-Seq experiments with allocation step
 
+This repo contains Snakemake pipelines to align ChIP-seq data with multiple mapping followed by [CSEM](http://deweylab.biostat.wisc.edu/csem/README.html) ([Chung et al. 2011](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002111)) allocation. These pipelines were developed for the following manuscript:
+
+[Diverse molecular mechanisms contribute to differential expression of human duplicated genes](https://www.biorxiv.org/content/10.1101/2020.11.27.401752v1). Shew CJ*, Carmona-Mora P, Soto DC, Mastoras M, Roberts E, Rosas J, Jagannathan D, Kaya G, O'Geen H, and Dennis MY. bioRxiv. 2020.
+
 ## 1) Required software
 
 Besides `snakemake`, this pipeline uses the following tools:
