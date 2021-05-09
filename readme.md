@@ -2,7 +2,7 @@
 
 This repo contains Snakemake pipelines to align ChIP-seq data with multiple mapping followed by [CSEM](http://deweylab.biostat.wisc.edu/csem/README.html) ([Chung et al. 2011](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002111)) allocation. These pipelines were developed for the following manuscript:
 
-[Diverse molecular mechanisms contribute to differential expression of human duplicated genes](https://www.biorxiv.org/content/10.1101/2020.11.27.401752v1). Shew CJ*, Carmona-Mora P, Soto DC, Mastoras M, Roberts E, Rosas J, Jagannathan D, Kaya G, O'Geen H, and Dennis MY. bioRxiv. 2020.
+[Diverse molecular mechanisms contribute to differential expression of human duplicated genes](https://academic.oup.com/mbe/advance-article/doi/10.1093/molbev/msab131/6261769?rss=1). Shew CJ*, Carmona-Mora P, Soto DC, Mastoras M, Roberts E, Rosas J, Jagannathan D, Kaya G, O'Geen H, and Dennis MY. MBE. 2021.
 
 **Snakefile_shortread**: used for analysis of short ENCODE reads (single-end)
 
