@@ -1,4 +1,4 @@
-# Snakemake file to call peaks in ChIP-Seq experiments with allocation step
+# ChIP-req read allocation for multiple alignments
 
 This repo contains Snakemake pipelines to align ChIP-seq data with multiple mapping followed by [CSEM](http://deweylab.biostat.wisc.edu/csem/README.html) ([Chung et al. 2011](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002111)) allocation. These pipelines were developed for the following manuscript:
 
