@@ -13,6 +13,14 @@ control:
   - control1
   - ...
 
+samples_size: # from phantompeakqualtools
+  - 485
+  - 485
+
+control_size: # from phantompeakqualtools
+  - 665
+  - 655
+  
 adapters: adapters/sequences.fa
 
 # Reference path
