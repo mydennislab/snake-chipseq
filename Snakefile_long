@@ -11,6 +11,8 @@ CSEM_PATH="/share/dennislab/programs/csem-2.4"
 ADAPTERS = config["adapters"]
 REFERENCE = config["reference"]
 CHROMSIZE = config["chromsize"]
+CROPSIZE = config["cropsize"]
+
 SAMPLES = config["samples"]
 CONTROL = config["control"]
 FILENAME = config["filename"]
