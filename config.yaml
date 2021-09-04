@@ -23,6 +23,10 @@ control_size: # from phantompeakqualtools
   
 adapters: adapters/sequences.fa
 
+# trimmomatic parameters
+
+cropsize: 20
+
 # Reference path
 
 reference: reference/masked_reference.fa
