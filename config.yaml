@@ -20,11 +20,6 @@ adapters: adapters/sequences.fa
 reference: reference/masked_reference.fa
 chromsize: reference/chromosome_sizes.txt
 
-# mrsFast options
-
-indexwindow: integer
-cropsize: integer
-
 # Peak calling options
 
 broad: boolean
