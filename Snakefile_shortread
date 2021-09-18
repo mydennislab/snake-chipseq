@@ -11,7 +11,7 @@ CSEM_PATH="/share/dennislab/programs/csem-2.4"
 ADAPTERS = config["adapters"]
 REFERENCE = config["reference"] 
 CHROMSIZE = config["chromsize"]
-CROPSIZE = config["cropsize"]
+CROPSIZE = config["cropsize"] 
 
 SAMPLES = config["samples"]
 CONTROL = config["control"]
@@ -285,4 +285,3 @@ rule bigwig:
      LC_COLLATE=C sort -k1,1 -k2,2n {input} > {params}
      bedGraphToBigWig {params} {CHROMSIZE} {output}
      """
-
